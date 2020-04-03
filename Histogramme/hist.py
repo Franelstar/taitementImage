@@ -59,3 +59,51 @@ def egalisationHistogramme(image):
     imageRetour = cv.equalizeHist(image)
 
     return imageRetour
+
+def filtreMoyenneur3(image):
+    return cv.blur(image, (3, 3))
+
+def filtreMoyenneur5(image):
+    return cv.blur(image, (5, 5))
+
+def filtreMoyenneur7(image):
+    return cv.blur(image, (7, 7))
+
+def filtreGaussien3(image):
+    return cv.GaussianBlur(image, (3, 3), 3)
+
+def filtreGaussien5(image):
+    return cv.GaussianBlur(image, (5, 5), 3)
+
+def filtreGaussien7(image):
+    return cv.GaussianBlur(image, (7, 7), 5)
+
+def filtreMedian3(image):
+    return cv.medianBlur(image, 3)
+
+def filtreMedian5(image):
+    return cv.medianBlur(image, 5)
+
+def filtreMedian7(image):
+    return cv.medianBlur(image, 7)
+
+def robert(image):
+    kernelx = np.array([[0, -1], [1, 0]])
+    kernely = np.array([[-1, 0], [0, 1]])
+    return cv.filter2D(image, -1, kernelx) + cv.filter2D(image, -1, kernely)
+
+def prewitt(image):
+    kernelx = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
+    kernely = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+    img_prewittx = cv.filter2D(image, -1, kernelx)
+    img_prewitty = cv.filter2D(image, -1, kernely)
+    return img_prewittx + img_prewitty
+
+def sobel(image):
+    return cv.Sobel(image, cv.CV_8U, 1, 1, ksize=1)
+
+def laplacien(image):
+    return cv.Laplacian(image, cv.CV_8U, ksize = 3)
+
+def canny(image, max, min):
+    return cv.Canny(image, min, max)
