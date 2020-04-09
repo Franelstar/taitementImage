@@ -4,6 +4,7 @@ from PIL import ImageTk, Image
 from Histogramme import hist
 import cv2 as cv
 import matplotlib.pyplot as plt
+from DFTFourrier import fourrier as four
 
 
 class MyApp:
@@ -22,6 +23,7 @@ class MyApp:
         self.file_contraste = Menu()
         self.file_filtre = Menu()
         self.file_contour = Menu()
+        self.fourrier = Menu()
 
         # initialization des composants
         self.canvas = Canvas(self.window, width=self.width, height=self.height, bg=self.couleur, highlightthickness=0)
@@ -35,7 +37,7 @@ class MyApp:
     def creer_menu(self):
         # Menu fichier
         file_menu = Menu(self.menu_barre, tearoff=0)
-        file_menu.add_command(label="Nouveau", command=self.ouvrir_image)
+        file_menu.add_command(label="Ouvrir", command=self.ouvrir_image)
         file_menu.add_command(label="Quitter", command=self.window.quit)
 
         # Menu histogramme
@@ -70,11 +72,17 @@ class MyApp:
         self.file_contour.add_command(label="Laplacien", command=self.laplacien, state="disabled")
         self.file_contour.add_command(label="Canny", command=self.canny, state="disabled")
 
+        self.fourrier = Menu(self.menu_barre, tearoff=0)
+        self.fourrier.add_command(label="Transformé de fourrier", command=self.tracer_fourrier, state="disabled")
+        self.fourrier.add_command(label="Filtre passe bas", command=self.filtre_bas_fourrier, state="disabled")
+        self.fourrier.add_command(label="Filtre passe haut", command=self.filtre_haut_fourrier, state="disabled")
+
         self.menu_barre.add_cascade(label="Fichier", menu=file_menu)
         self.menu_barre.add_cascade(label="Caractéristiques", menu=self.file_histogramme)
         self.menu_barre.add_cascade(label="Contraste", menu=self.file_contraste)
         self.menu_barre.add_cascade(label="Filtres", menu=self.file_filtre)
         self.menu_barre.add_cascade(label="Contours", menu=self.file_contour)
+        self.menu_barre.add_cascade(label="Fourrier", menu=self.fourrier)
 
         self.window.config(menu=self.menu_barre)
 
@@ -83,8 +91,12 @@ class MyApp:
         image = cv.imread(filename)
         self.image = cv.cvtColor(image, cv.COLOR_BGR2GRAY);
         height, width = self.image.shape
-        imgScale = self.width/width
-        newX,newY = self.image.shape[1]*imgScale, self.image.shape[0]*imgScale
+        if height > width:
+            imgScale = self.width/width
+            newX,newY = self.image.shape[1]*imgScale, self.image.shape[0]*imgScale
+        else:
+            imgScale = self.height / height
+            newX, newY = self.image.shape[1] * imgScale, self.image.shape[0] * imgScale
         resized = cv.resize(self.image,(int(newX),int(newY)))
         self.img = ImageTk.PhotoImage(image=Image.fromarray(resized))
         self.canvas.create_image(0, 0, anchor=NW, image=self.img)
@@ -108,6 +120,9 @@ class MyApp:
         self.file_contour.entryconfig("Sobel", state="normal")
         self.file_contour.entryconfig("Laplacien", state="normal")
         self.file_contour.entryconfig("Canny", state="normal")
+        self.fourrier.entryconfig("Transformé de fourrier", state="normal")
+        self.fourrier.entryconfig("Filtre passe bas", state="normal")
+        self.fourrier.entryconfig("Filtre passe haut", state="normal")
 
     def histograme(self):
         plt.plot(hist.histogramme(self.image))
@@ -233,6 +248,59 @@ class MyApp:
         if max != '' and min != '' and int(max) > int(min):
             plt.imshow(hist.canny(self.image, int(max), int(min)), cmap="gray")
             plt.title("Filtre de Canny")
+            plt.show()
+
+    def tracer_fourrier(self):
+        plt.imshow( four.main(self.image), cmap="gray")
+        plt.title("spectre de magnitude - Transformée de fourier")
+        plt.show()
+
+    def filtre_bas_fourrier(self):
+        self.toplevel = Toplevel()
+        self.toplevel.title("Choisissez le pourcentage")
+        self.entry1 = Entry(self.toplevel)
+        label1 = Label(self.toplevel, text="% filtre :", font=("Courrier", 16))
+        label1.grid(row=1, column=1, padx=1, pady=1)
+        self.entry1.grid(row=1, column=2, padx=1, pady=1)
+        Button(self.toplevel, text='Valider', command=self.validerfiltre_bas_fourrier).grid(row=3, column=0, sticky=W + E, padx=2, pady=5)
+        Button(self.toplevel, text='Annuler', command=self.toplevel.destroy).grid(row=3, column=1, sticky=W + E, padx=2, pady=5)
+        self.toplevel.wait_window(self.toplevel)
+
+    def validerfiltre_bas_fourrier(self):
+        pourcentage = self.entry1.get()
+        self.entry1.delete(0, END)
+        self.toplevel.destroy()
+        if pourcentage != '':
+            if(int(pourcentage) < 0):
+                pourcentage = 0
+            elif(int(pourcentage) > 100):
+                pourcentage = 100
+            plt.imshow(four.filtre_passe_bas(self.image, int(pourcentage)), cmap="gray")
+            plt.title("Filtre passe bas - Transformée de fourier")
+            plt.show()
+
+    def filtre_haut_fourrier(self):
+        self.toplevel = Toplevel()
+        self.toplevel.title("Choisissez le pourcentage")
+        self.entry1 = Entry(self.toplevel)
+        label1 = Label(self.toplevel, text="% filtre :", font=("Courrier", 16))
+        label1.grid(row=1, column=1, padx=1, pady=1)
+        self.entry1.grid(row=1, column=2, padx=1, pady=1)
+        Button(self.toplevel, text='Valider', command=self.validerfiltre_haut_fourrier).grid(row=3, column=0, sticky=W + E, padx=2, pady=5)
+        Button(self.toplevel, text='Annuler', command=self.toplevel.destroy).grid(row=3, column=1, sticky=W + E, padx=2, pady=5)
+        self.toplevel.wait_window(self.toplevel)
+
+    def validerfiltre_haut_fourrier(self):
+        pourcentage = self.entry1.get()
+        self.entry1.delete(0, END)
+        self.toplevel.destroy()
+        if pourcentage != '':
+            if(int(pourcentage) < 0):
+                pourcentage = 0
+            elif(int(pourcentage) > 100):
+                pourcentage = 100
+            plt.imshow(four.filtre_passe_haut(self.image, int(pourcentage)), cmap="gray")
+            plt.title("Filtre passe haut - Transformée de fourier")
             plt.show()
 
     def plot(self, image, titre):
